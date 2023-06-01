@@ -11,8 +11,13 @@ double* determine_slopes(char connections[]);
 
 int main() {
 
-    char templateString[] = "3x3,3|0-8,6-8,0-6";
+    char templateString[] = "3x3,1|0-8,6-8,0-6,3-5";
     const int TEMPLATE_LENGTH = sizeof(templateString)/sizeof(*templateString);
+
+    if(!regex_match(templateString, regex(R"(^\d+x\d+,\d+\|(?:\d+-\d+,?)+$)"))) {
+        cout << "INVALID TEMPLATE" << endl;
+        return 0;
+    }
 
     for(int i = 0; i < TEMPLATE_LENGTH; i++) {
         if(templateString[i] == '\0') {
@@ -37,10 +42,10 @@ int main() {
     }
     if(pipeIndex == -1) return 0; //stop program from running because invalid template
 
-
     //Split string into grid sizing properties and connections
     char gridProperties[pipeIndex + 1];
-    char connections[TEMPLATE_LENGTH - pipeIndex];
+    memset(gridProperties, '\0', (pipeIndex + 1) * sizeof(char)); //"clear out" what is left in the gridProperties memory location
+    char connections[TEMPLATE_LENGTH - pipeIndex - 1];
 
     cout << TEMPLATE_LENGTH << endl;
     cout << sizeof(gridProperties)/sizeof(*gridProperties) << endl;
@@ -49,35 +54,34 @@ int main() {
 
     for(int i = 0; i < pipeIndex; i++) {
         gridProperties[i] = templateString[i];
-        cout << i << " ";
     }
 
     for(int i = 0, j = pipeIndex + 1; j < TEMPLATE_LENGTH; i++, j++) {
         connections[i] = templateString[j];
-        cout << i << " ";
     }
 
-    cout << endl << gridProperties << endl << connections << endl;
+    regex gridRE("\\d+");
 
-
-    regex re("\\d+x\\d+,\\d+");
+    cregex_iterator gridIter = cregex_iterator(gridProperties, gridProperties + (sizeof(gridProperties)/sizeof(*gridProperties)), gridRE);
 
     regex connectionRE("\\d+-\\d+");
 
     cout << "==========" << endl;
-    for(cregex_iterator it = cregex_iterator(connections, connections + (sizeof(connections)/sizeof(*connections)), connectionRE); it != cregex_iterator(); it++) {
+    for(cregex_iterator it = cregex_iterator(gridProperties, gridProperties + (sizeof(gridProperties)/sizeof(*gridProperties)), gridRE); it != cregex_iterator(); it++) {
         cout << (*it).str() << endl;
     }
     cout << "==========" << endl;
 
     for(cregex_iterator iter = cregex_iterator(begin(templateString), end(templateString), connectionRE); iter != cregex_iterator(); iter++) {
-        cout << (*iter).str() << ", position:" << (*iter).position() << endl;
+        cout << (*iter).str() << ": position:" << (*iter).position() << endl;
     }
 
-    const int spacing = 3;
 
-    const int COLUMN_COUNT = 3;
-    const int ROW_COUNT = 3;
+    const int COLUMN_COUNT = stoi((*gridIter).str());
+    gridIter++;
+    const int ROW_COUNT = stoi((*gridIter).str());
+    gridIter++;
+    const int spacing = stoi((*gridIter).str());
 
     int points[COLUMN_COUNT * ROW_COUNT][2];
 
@@ -91,9 +95,9 @@ int main() {
         }
     }
 
-    /*for(auto & point : points) {
+    for(auto & point : points) {
        cout << "(" << point[0] << "," << point[1] << ") | ";
-    }*/
+    }
 
 
     //determine_slopes(templateString);
